@@ -108,15 +108,52 @@ class c_async_scheduler {
     
 }
 
+class c_param {
+    
+    constructor(val) {
+        this.val = val;
+    }
+    
+}
+
+class c_param_pool {
+    
+    constructor() {
+        this._pool = {};
+    }
+    
+    param(key, val = undefined) {
+        if(val === undefined) {
+            return this._pool[key];
+        }
+        let par = this._pool[key];
+        if(!par) {
+            par = new c_param(val);
+            this._pool[key] = par;
+        } else {
+            par.val = val;
+        }
+        return par;
+    }
+    
+    update(dst) {
+        for(let k in dst) {
+            this.param(k, dst[k]);
+        }
+    }
+    
+}
+
 const ERR_PRSN_BREAK = Symbol();
 class c_persona {
 	
 	constructor() {
 		this.scheduler = new c_async_scheduler();
         this.tasks = {};
+        this.params = new c_param_pool();
 	}
     
-    start(tsklist) {
+    start(tsklist, minds = {}) {
         for(let [tname, prio, ...args] of tsklist) {
             let is_loop = false;
             let mname = 'task_' + tname;
@@ -145,11 +182,31 @@ class c_persona {
                 this.stdtask(mname, task, ...args);
             }
         }
+        this.minds = minds;
+    }
+    
+    get_params(args) {
+        let rargs = [];
+        for(let arg of args) {
+            let val = arg;
+            if(arg instanceof c_param) {
+                val = arg.val;
+            }
+            rargs.push(val);
+        }
+        return rargs;
+    }
+    
+    mind(mname) {
+        let mind = this.minds[mname];
+        if(mind) {
+            this.params.update(mind);
+        }
     }
     
     async stdtask(mtd_name, task, ...args) {
         try {
-            return await this[mtd_name](task, ...args);
+            return await this[mtd_name](task, ...this.get_params(args));
         } catch (e) {
             if(e === ERR_PRSN_BREAK) {
                 return;
@@ -175,7 +232,7 @@ class c_persona {
                     task.chk_break(await task.schedule(this.wait_frame()))
                     control.need_wait = false;
                 }
-                await this[mtd_name](task, control, ...args);
+                await this[mtd_name](task, control, ...this.get_params(args));
             } catch(e) {
                 if(e === ERR_PRSN_BREAK) {
                     break;
@@ -213,30 +270,48 @@ class c_farmer_std extends c_persona {
         this.battle = false;
         this.travel = false;
         this.runaway = false;
+        this.tick = 0;
     }
     
     start() {
         super.start([
+            ['minds', 3, ['bat1', 'bat2', 'bat3'], 60],
             ['loot', 5],
             ['supply', 8],
             ['shopping', 9, 'cfg:nowait'],
             //['target_monster', 10, 'goo'],
             //['target_monster', 10, 'poisio'],
 			//['target_monster', 10, 'snake'],
-			['target_monster', 10, 'bat'],
+			['target_monster', 10, this.params.param('tar_name', 'bat')],
             ['attack', 20, 'cfg:nowait'],
-            ['move_back', 30, 'cfg:nowait'],
+            ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
             //['move_back_smart', 40, 'cfg:nowait', [0, 0]],
 			//['move_back_smart', 40, 'cfg:nowait', [-150, 850]],
 			//['move_back_smart', 40, 'cfg:nowait', [330, -190]],
 			//['move_back_smart', 40, 'cfg:nowait', [630, -360]],
-			['move_back_smart', 40, 'cfg:nowait', [[590, -200], [600, -490], [310, -480], [290, -210]]],
+			['move_back_smart', 40, 'cfg:nowait',
+                this.params.param('back_path', [[590, -200], [600, -490], [310, -480], [290, -210]]),
+                this.params.param('back_thr')],
             ['move_to_target', 50, 'cfg:nowait'],
             //['go_farm', 100, 'cfg:nowait', [0, 600]],
             //['go_farm', 100, 'cfg:nowait', [-250, 1150]],
 			//['go_farm', 100, 'cfg:nowait', [-260, 1650]],
-			['go_farm', 100, 'cfg:nowait', [-50, -380], ['Mainland:cave']],
-        ]);
+			//['go_farm', 100, 'cfg:nowait', [-50, -380], ['Mainland:cave']],
+			//['go_farm', 100, 'cfg:nowait', [970, 90], ['Mainland:cave']],
+			['go_farm', 100, 'cfg:nowait',
+                this.params.param('tar_pos', [400, -850]),
+                this.params.param('tar_doors', ['Mainland:cave'])],
+        ], {
+            'bat1': {
+                'tar_pos': [-50, -380],
+            },
+            'bat2': {
+                'tar_pos': [970, 90],
+            },
+            'bat3': {
+                'tar_pos': [400, -850],
+            },
+        });
     }
     
     wait_frame() {
@@ -342,6 +417,11 @@ class c_farmer_std extends c_persona {
 		prm.think = thk_prm;
         return prm;
 	}
+    
+    async taskw_minds(task, ctrl, mindlist, dminutes = 60) {
+        let midx = Math.floor((this.tick ++) / (dminutes * 60 * 4)) % mindlist.length;
+        this.mind(mindlist[midx]);
+    }
     
     async taskw_loot(task, ctrl) {
         loot();
