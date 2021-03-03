@@ -272,6 +272,20 @@ class c_farmer_std extends c_persona {
         this.runaway = false;
         this.tick = 0;
     }
+	
+	start_jail() {
+		super.start([
+			['loot', 5],
+            ['supply', 8],
+			['target_monster', 10, this.params.param('tar_name', 'jrat')],
+			['attack', 20, 'cfg:nowait'],
+            ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
+			['move_back_smart', 40, 'cfg:nowait',
+                this.params.param('back_path', [[-180, -100], [-180, 100], [180, 100], [180, -100]]),
+                this.params.param('back_thr')],
+			['move_to_target', 50, 'cfg:nowait'],
+		]);
+	}
     
     start() {
         super.start([
@@ -606,3 +620,4 @@ class c_farmer_std extends c_persona {
 
 ch1 = new c_farmer_std();
 ch1.start();
+//ch1.start_jail()
