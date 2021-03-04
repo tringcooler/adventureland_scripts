@@ -210,6 +210,7 @@ class c_persona {
             return await this[mtd_name](task, ...this.get_params(args));
         } catch (e) {
             if(e === ERR_PRSN_BREAK) {
+                safe_log('Break: ' + mtd_name);
                 return;
             }
             safe_log('Error:' + e);
@@ -241,6 +242,7 @@ class c_persona {
                 await this[mtd_name](task, control, ...this.get_params(args));
             } catch(e) {
                 if(e === ERR_PRSN_BREAK) {
+                    safe_log('Break: ' + mtd_name);
                     break;
                 }
 				if(e.message) {
@@ -251,9 +253,6 @@ class c_persona {
     }
 	
 	break(tname = null, dostop = true) {
-		if(dostop) {
-			stop();
-		}
         if(tname) {
             let task = this.tasks[tname];
             if(task) {
@@ -262,6 +261,9 @@ class c_persona {
         } else {
             this.scheduler.break_all();
         }
+        if(dostop) {
+			stop();
+		}
 	}
 	
 }
