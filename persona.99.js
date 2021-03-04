@@ -280,22 +280,8 @@ class c_farmer_std extends c_persona {
         this.runaway = false;
         this.tick = 0;
     }
-	
-	start_jail() {
-		super.start([
-			['loot', 5],
-            ['supply', 8],
-			['target_monster', 10, this.params.param('tar_name', 'jrat')],
-			['attack', 20, 'cfg:nowait'],
-            ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
-			['move_back_smart', 40, 'cfg:nowait',
-                this.params.param('back_path', [[-180, -100], [-180, 100], [180, 100], [180, -100]]),
-                this.params.param('back_thr')],
-			['move_to_target', 50, 'cfg:nowait'],
-		]);
-	}
     
-    start() {
+    start_cave() {
         super.start([
             ['minds', 3, ['bat1', 'bat2', 'bat3'], 60],
             ['loot', 5],
@@ -318,10 +304,8 @@ class c_farmer_std extends c_persona {
             //['go_farm', 100, 'cfg:nowait', [0, 600]],
             //['go_farm', 100, 'cfg:nowait', [-250, 1150]],
 			//['go_farm', 100, 'cfg:nowait', [-260, 1650]],
-			//['go_farm', 100, 'cfg:nowait', [-50, -380], ['Mainland:cave']],
-			//['go_farm', 100, 'cfg:nowait', [970, 90], ['Mainland:cave']],
 			['go_farm', 100, 'cfg:nowait',
-                this.params.param('tar_pos', [400, -850]),
+                this.params.param('tar_pos', [-50, -380]),
                 this.params.param('tar_doors', ['Mainland:cave'])],
         ], {
             'bat1': {
@@ -334,6 +318,39 @@ class c_farmer_std extends c_persona {
                 'tar_pos': [400, -850],
             },
         });
+    }
+    
+    start_jail() {
+		super.start([
+			['loot', 5],
+            ['supply', 8],
+			['target_monster', 10, this.params.param('tar_name', 'jrat')],
+			['attack', 20, 'cfg:nowait'],
+            ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
+			['move_back_smart', 40, 'cfg:nowait',
+                this.params.param('back_path', [[-180, -100], [-180, 100], [180, 100], [180, -100]]),
+                this.params.param('back_thr')],
+			['move_to_target', 50, 'cfg:nowait'],
+		]);
+	}
+    
+    start_forest() {
+        super.start([
+            //['minds', 3, ['bat1', 'bat2', 'bat3'], 60],
+            ['loot', 5],
+            ['supply', 8],
+            ['shopping', 9, 'cfg:nowait'],
+			['target_monster', 10, this.params.param('tar_name', ['snake', 'osnake'])],
+            ['attack', 20, 'cfg:nowait'],
+            ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
+			['move_back_smart', 40, 'cfg:nowait',
+                this.params.param('back_path', [[530, -620], [430, -760], [160, -770], [290, -550]]),
+                this.params.param('back_thr')],
+            ['move_to_target', 50, 'cfg:nowait'],
+			['go_farm', 100, 'cfg:nowait',
+                this.params.param('tar_pos', [380, -700]),
+                this.params.param('tar_doors', ['Mainland:halloween'])],
+        ]);
     }
     
     start_compound() {
@@ -467,7 +484,9 @@ class c_farmer_std extends c_persona {
     }
     
     async taskw_shopping(task, ctrl) {
-        if(quantity('hpot0') > 50 && quantity('mpot0') > 50) {
+        let hpname = 'hpot1';
+        let mpname = 'mpot0';
+        if(quantity(hpname) > 50 && quantity(mpname) > 50) {
             ctrl.need_wait = true;
             return;
         }
@@ -475,11 +494,11 @@ class c_farmer_std extends c_persona {
         task.hold();
         task.chk_break(await task.schedule(this.amoveto('town')));
         set_message("shopping");
-        if(quantity('hpot0') < 100) {
-            buy('hpot0', 200);
+        if(quantity(hpname) < 100) {
+            buy(hpname, 200);
         }
-        if(quantity('mpot0') < 100) {
-            buy('mpot0', 200);
+        if(quantity(mpname) < 100) {
+            buy(mpname, 200);
         }
 		task.chk_break(await task.schedule(asleep(1000)));
     }
@@ -555,11 +574,18 @@ class c_farmer_std extends c_persona {
     }
     
     async taskw_target_monster(task, ctrl, tname) {
+        let tnames = tname;
+        if(!(tname instanceof Array)) {
+            tnames = [tnames];
+        }
         let target = get_targeted_monster();
-        if(target?.mtype === tname) {
+        if(tnames.includes(target?.mtype)) {
             return;
         }
-        target = get_nearest_monster({type: tname});
+        for(let i = tnames.length - 1; i >= 0; i--) {
+            target = get_nearest_monster({type: tnames[i]});
+            if(target) break;
+        }
         if(target) {
             set_message("Targeted");
         }
@@ -703,6 +729,7 @@ class c_farmer_std extends c_persona {
 }
 
 ch1 = new c_farmer_std();
-ch1.start();
+//ch1.start_cave();
+ch1.start_forest();
 //ch1.start_jail();
 //ch1.start_compound();
