@@ -175,6 +175,7 @@ class c_persona {
                     }
                     throw ERR_PRSN_BREAK;
                 }
+                return ret;
             };
             if(is_loop) {
                 this.looptask(mname, task, ...args);
@@ -218,6 +219,7 @@ class c_persona {
     async looptask(mtd_name, task, ...args) {
         let control = {
             'need_wait': false,
+            'done': false,
         };
         let cfg = new Set();;
         if(args[0]?.slice?.(0, 4) === 'cfg:') {
@@ -227,6 +229,10 @@ class c_persona {
             }
         }
         while(true) {
+            if(control.done) {
+                safe_log('Done: ' + mtd_name);
+                break;
+            }
             try {
                 if(control.need_wait || !cfg.has('nowait')) {
                     task.chk_break(await task.schedule(this.wait_frame()))
@@ -326,6 +332,12 @@ class c_farmer_std extends c_persona {
                 'tar_pos': [400, -850],
             },
         });
+    }
+    
+    start_compound() {
+        super.start([
+            ['compound_all', 100],
+        ]);
     }
     
     wait_frame() {
@@ -468,6 +480,76 @@ class c_farmer_std extends c_persona {
             buy('mpot0', 200);
         }
 		task.chk_break(await task.schedule(asleep(1000)));
+    }
+    
+    async taskw_compound_all(task, ctrl, thrlvl = 1) {
+        let scname = 'cscroll0';
+        if(character.q.compound) {
+            return;
+        }
+        let com_list = {};
+        let has_slot = false;
+        let has_scroll = false;
+        for(let i = 0; i < character.items.length; i++) {
+            let item = character.items[i];
+            if(!item) {
+                has_slot = true;
+                continue;
+            } else if(item.name === scname) {
+                has_scroll = true;
+                continue;
+            }
+            let item_def = G.items[item.name];
+            if(!item_def.compound || !('level' in item) || item.level > thrlvl) continue;
+            let ckey = item.name + ':' + item.level;
+            if(!com_list[ckey]) {
+                com_list[ckey] = [[]];
+            }
+            let cgroup = com_list[ckey].slice(-1)[0];
+            if(cgroup?.length === 3) {
+                cgroup = [];
+                com_list[ckey].push(cgroup);
+            }
+            cgroup.push(i);
+        }
+        if(!has_scroll && !has_slot) {
+            ctrl.done = true;
+            return;
+        }
+        let compounded = false;
+        for(let ckey in com_list) {
+            for(let cgroup of com_list[ckey]) {
+                if(cgroup.length !== 3) {
+                    continue;
+                }
+                let sc_slot = locate_item(scname);
+                if(sc_slot < 0) {
+                    try {
+                        let data = task.chk_break(await task.schedule(buy(scname, 1)));
+                        sc_slot = data.num;
+                    } catch(e) {
+                        safe_log('buy failed: ' + e.reason);
+                        ctrl.done = true;
+                        return;
+                    }
+                }
+                try {
+                    let data = task.chk_break(await task.schedule(compound(...cgroup, sc_slot)));
+                    if(!data.success) {
+                        safe_log('compound broken: ' + ckey);
+                    }
+                } catch(e) {
+                    safe_log('compound failed: ' + e.reason);
+                    ctrl.done = true;
+                    return;
+                }
+                compounded = true;
+            }
+        }
+        if(!compounded) {
+            ctrl.done = true;
+        }
+        return;
     }
     
     async taskw_target_monster(task, ctrl, tname) {
@@ -620,4 +702,5 @@ class c_farmer_std extends c_persona {
 
 ch1 = new c_farmer_std();
 ch1.start();
-//ch1.start_jail()
+//ch1.start_jail();
+//ch1.start_compound();
