@@ -391,7 +391,7 @@ class c_farmer_std extends c_persona {
 			//['target_monster', 10, this.params.param('tar_name', ['snake', 'osnake'])],
 			['target_monster', 10, this.params.param('tar_name', [/*'scorpion',*/ 'xscorpion'])],
             //['attack', 20, 'cfg:nowait'],
-            ['attack', 20, 'cfg:nowait', true],
+            ['attack', 20, 'cfg:nowait', this.calmdown = true],
             ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
 			//['move_back_smart', 40, 'cfg:nowait',
             //    this.params.param('back_path', [[530, -620], [430, -760], [160, -770], [290, -550]]),
