@@ -408,7 +408,7 @@ class c_farmer_std extends c_persona {
             //    this.params.param('back_path', [[530, -620], [430, -760], [160, -770], [290, -550]]),
             //    this.params.param('back_thr')],
             ['move_back_smart', 40, 'cfg:nowait',
-                this.params.param('back_path', [[-400, 850], [-685, 820], [-680, 500], [-400, 520]]),
+                this.params.param('back_path', [[-410, 840], [-675, 830], [-670, 510], [-410, 530]]),
                 this.params.param('back_thr')],
             ['move_to_target', 50, 'cfg:nowait'],
 			//['go_farm', 100, 'cfg:nowait',
@@ -558,7 +558,7 @@ class c_farmer_std extends c_persona {
         if(mpv < 0.2) use_skill('use_mp');
         else if(hpv < 0.8) use_skill('use_hp');
         else if(mpv < 0.5) use_skill('use_mp');
-        else if(hpv < 0.9) use_skill('regen_hp');
+        else if(hpv < 0.98) use_skill('regen_hp');
         else if(mpv < 0.9) use_skill('regen_mp');
     }
     
@@ -825,7 +825,7 @@ class c_farmer_std extends c_persona {
 }
 
 ch1 = new c_farmer_std();
-ch1.start_cave();
-//ch1.start_forest();
+//ch1.start_cave();
+ch1.start_forest();
 //ch1.start_jail();
 //ch1.start_compound();
