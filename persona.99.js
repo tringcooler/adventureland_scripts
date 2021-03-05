@@ -169,7 +169,7 @@ class c_persona {
             let task = this.scheduler.newtask(prio);
             this.tasks[tname] = task;
             task.chk_break = ret => {
-                if(task.is_break(ret)) {
+                if(task.force_break || task.is_break(ret)) {
                     if(this.tasks[tname] === task) {
                         delete this.tasks[tname];
                     }
@@ -177,6 +177,12 @@ class c_persona {
                 }
                 return ret;
             };
+            task.remove = () => {
+                if(this.tasks[tname] === task) {
+                    delete this.tasks[tname];
+                }
+            };
+            task.force_break = false;
             if(is_loop) {
                 this.looptask(mname, task, ...args);
             } else {
@@ -184,6 +190,37 @@ class c_persona {
             }
         }
         this.minds = minds;
+    }
+    
+    setup_sense() {
+        this.sense_hndls = {};
+        return (sname, fmatch) => {
+            return (data, reason) => {
+                let sgroup = this.sense_hndls[sname];
+                for(let mkey in sgroup) {
+                    let [hndl, margs] = sgroup[mkey];
+                    if(fmatch(data, ...margs)) {
+                        if(hndl(data) !== true) {
+                            delete sgroup[mkey];
+                        }
+                    }
+                }
+            }
+        };
+    }
+    
+    on_sense(sname, hndl, ...matchs) {
+        let sgroup = this.sense_hndls[sname];
+        if(!sgroup) {
+            sgroup = {};
+            this.sense_hndls[sname] = sgroup;
+        }
+        let mkey = matchs.join(',');
+        if(sgroup[mkey]) {
+            return false;
+        }
+        sgroup[mkey] = [hndl, matchs];
+        return true;
     }
     
     get_params(args) {
@@ -231,6 +268,7 @@ class c_persona {
         }
         while(true) {
             if(control.done) {
+                task.remove();
                 safe_log('Done: ' + mtd_name);
                 break;
             }
@@ -248,6 +286,7 @@ class c_persona {
 				if(e.message) {
                 	safe_log('Error:' + e.message);
 				}
+                await asleep(0);
             }
         }
     }
@@ -256,9 +295,14 @@ class c_persona {
         if(tname) {
             let task = this.tasks[tname];
             if(task) {
+                task.force_break = true;
                 task.break();
             }
         } else {
+            for(let tkey in this.tasks) {
+                let task = this.tasks[tkey]; 
+                task.force_break = true;
+            }
             this.scheduler.break_all();
         }
         if(dostop) {
@@ -279,10 +323,12 @@ class c_farmer_std extends c_persona {
         this.travel = false;
         this.runaway = false;
         this.tick = 0;
+        this.setup_sense();
     }
     
     start_cave() {
         super.start([
+            ['rest', 1],
             ['minds', 3, ['bat1', 'bat2', 'bat3'], 60],
             ['loot', 5],
             ['supply', 8],
@@ -322,6 +368,7 @@ class c_farmer_std extends c_persona {
     
     start_jail() {
 		super.start([
+            ['rest', 1],
 			['loot', 5],
             ['supply', 8],
 			['target_monster', 10, this.params.param('tar_name', 'jrat')],
@@ -336,6 +383,7 @@ class c_farmer_std extends c_persona {
     
     start_forest() {
         super.start([
+            ['rest', 1],
             //['minds', 3, ['bat1', 'bat2', 'bat3'], 60],
             ['loot', 5],
             ['supply', 8],
@@ -365,6 +413,11 @@ class c_farmer_std extends c_persona {
         super.start([
             ['compound_all', 100],
         ]);
+    }
+    
+    setup_sense() {
+        let gen_hndl = super.setup_sense();
+        game.on('death', gen_hndl('death', (data, mid) => data.id === mid));
     }
     
     wait_frame() {
@@ -470,6 +523,12 @@ class c_farmer_std extends c_persona {
 		prm.think = thk_prm;
         return prm;
 	}
+    
+    async taskw_rest(task, ctrl) {
+        if(character.rip) {
+            this.break();
+        }
+    }
     
     async taskw_minds(task, ctrl, mindlist, dminutes = 60) {
         let midx = Math.floor((this.tick ++) / (dminutes * 60 * 4)) % mindlist.length;
@@ -620,12 +679,17 @@ class c_farmer_std extends c_persona {
         task.chk_break(await task.schedule(
             this.axmove(...pos).then(() => {
                 this.travel = false;
+                this.calmdown = false;
                 //safe_log('trav done');
             })
         ));
     }
     
     async taskw_move_to_target(task, ctrl, step = 10) {
+        if(this.calmdown) {
+            ctrl.need_wait = true;
+            return;
+        }
         let target = get_targeted_monster();
         if(!target) {
             ctrl.need_wait = true;
@@ -719,8 +783,7 @@ class c_farmer_std extends c_persona {
     }
     
     async taskw_attack(task, ctrl, careful = false) {
-        if(this.travel && careful) {
-            this.battle = false;
+        if(this.calmdown) {
             ctrl.need_wait = true;
             return;
         }
@@ -736,7 +799,15 @@ class c_farmer_std extends c_persona {
             //safe_log('trav stop');
             stop();
         }
-        task.chk_break(await task.schedule(attack(target)));
+        task.chk_break(await task.schedule(attack(target).then(() => {
+            this.on_sense('death', () => {
+                this.battle = false;
+                if(careful) {
+                    this.calmdown = true;
+                    set_message("Calmdown");
+                }
+            }, target.id);
+        })));
     }
     
 }
