@@ -242,6 +242,13 @@ class c_persona {
         }
     }
     
+    wait_frame(time = null) {
+        if((time ?? null) === null) {
+            time = 250;
+        }
+        return asleep(time);
+    }
+    
     async stdtask(mtd_name, task, ...args) {
         try {
             return await this[mtd_name](task, ...this.get_params(args));
@@ -258,6 +265,7 @@ class c_persona {
         let control = {
             'need_wait': false,
             'done': false,
+            'ftime': null,
         };
         let cfg = new Set();;
         if(args[0]?.slice?.(0, 4) === 'cfg:') {
@@ -274,7 +282,7 @@ class c_persona {
             }
             try {
                 if(control.need_wait || !cfg.has('nowait')) {
-                    task.chk_break(await task.schedule(this.wait_frame()))
+                    task.chk_break(await task.schedule(this.wait_frame(control.ftime)))
                     control.need_wait = false;
                 }
                 await this[mtd_name](task, control, ...this.get_params(args));
@@ -329,6 +337,7 @@ class c_farmer_std extends c_persona {
     start_cave() {
         super.start([
             ['rest', 1],
+            ['ping', 2],
             ['minds', 3, ['bat1', 'bat2', 'bat3'], 60],
             ['loot', 5],
             ['supply', 8],
@@ -369,6 +378,7 @@ class c_farmer_std extends c_persona {
     start_jail() {
 		super.start([
             ['rest', 1],
+            ['ping', 2],
 			['loot', 5],
             ['supply', 8],
 			['target_monster', 10, this.params.param('tar_name', 'jrat')],
@@ -384,6 +394,7 @@ class c_farmer_std extends c_persona {
     start_forest() {
         super.start([
             ['rest', 1],
+            ['ping', 2],
             //['minds', 3, ['bat1', 'bat2', 'bat3'], 60],
             ['loot', 5],
             ['supply', 8],
@@ -418,10 +429,6 @@ class c_farmer_std extends c_persona {
     setup_sense() {
         let gen_hndl = super.setup_sense();
         game.on('death', gen_hndl('death', (data, mid) => data.id === mid));
-    }
-    
-    wait_frame() {
-        return asleep(250);
     }
     
     dist_to(tar) {
@@ -528,6 +535,11 @@ class c_farmer_std extends c_persona {
         if(character.rip) {
             this.break();
         }
+    }
+    
+    async taskw_ping(task, ctrl) {
+        ctrl.ftime = 5000;
+        safe_log('ping: ' + Math.floor(character.ping) + 'ms', 'grey');
     }
     
     async taskw_minds(task, ctrl, mindlist, dminutes = 60) {
@@ -813,7 +825,7 @@ class c_farmer_std extends c_persona {
 }
 
 ch1 = new c_farmer_std();
-//ch1.start_cave();
-ch1.start_forest();
+ch1.start_cave();
+//ch1.start_forest();
 //ch1.start_jail();
 //ch1.start_compound();
