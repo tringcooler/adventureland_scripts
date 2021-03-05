@@ -340,15 +340,23 @@ class c_farmer_std extends c_persona {
             ['loot', 5],
             ['supply', 8],
             ['shopping', 9, 'cfg:nowait'],
-			['target_monster', 10, this.params.param('tar_name', ['snake', 'osnake'])],
-            ['attack', 20, 'cfg:nowait'],
+			//['target_monster', 10, this.params.param('tar_name', ['snake', 'osnake'])],
+			['target_monster', 10, this.params.param('tar_name', [/*'scorpion',*/ 'xscorpion'])],
+            //['attack', 20, 'cfg:nowait'],
+            ['attack', 20, 'cfg:nowait', true],
             ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
-			['move_back_smart', 40, 'cfg:nowait',
-                this.params.param('back_path', [[530, -620], [430, -760], [160, -770], [290, -550]]),
+			//['move_back_smart', 40, 'cfg:nowait',
+            //    this.params.param('back_path', [[530, -620], [430, -760], [160, -770], [290, -550]]),
+            //    this.params.param('back_thr')],
+            ['move_back_smart', 40, 'cfg:nowait',
+                this.params.param('back_path', [[-400, 850], [-685, 820], [-680, 500], [-400, 520]]),
                 this.params.param('back_thr')],
             ['move_to_target', 50, 'cfg:nowait'],
-			['go_farm', 100, 'cfg:nowait',
-                this.params.param('tar_pos', [380, -700]),
+			//['go_farm', 100, 'cfg:nowait',
+            //    this.params.param('tar_pos', [380, -700]),
+            //    this.params.param('tar_doors', ['Mainland:halloween'])],
+            ['go_farm', 100, 'cfg:nowait',
+                this.params.param('tar_pos', [-600, 490]),
                 this.params.param('tar_doors', ['Mainland:halloween'])],
         ]);
     }
@@ -710,7 +718,12 @@ class c_farmer_std extends c_persona {
         ));
     }
     
-    async taskw_attack(task, ctrl) {
+    async taskw_attack(task, ctrl, careful = false) {
+        if(this.travel && careful) {
+            this.battle = false;
+            ctrl.need_wait = true;
+            return;
+        }
         let target = get_targeted_monster();
         if(!target || !can_attack(target)) {
             this.battle = false;
