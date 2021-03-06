@@ -257,9 +257,9 @@ class c_persona {
                 safe_log('Break: ' + mtd_name);
                 return;
             } else if(e.message) {
-                safe_log('Error:' + e.message);
+                safe_log('Error:' + mtd_name + '(' + e.message + ')');
             } else if('reason' in e) {
-                safe_log('Failed:' + e.reason);
+                safe_log('Failed:' + mtd_name + '(' + e.reason + ')');
             }
         }
     }
@@ -295,10 +295,10 @@ class c_persona {
                     break;
                 }
 				if(e.message) {
-                	safe_log('Error:' + e.message);
+                	safe_log('Error:' + mtd_name + '(' + e.message + ')');
 				}
                 if('reason' in e) {
-                    safe_log('Failed:' + e.reason);
+                    safe_log('Failed:' + mtd_name + '(' + e.reason + ')');
                     control.need_wait = true;
                 } else {
                     task.chk_break(await task.schedule(asleep(0)));
@@ -456,6 +456,18 @@ class c_farmer_std extends c_persona {
 			['attack', 20, 'cfg:nowait'],
 		]);
 	}
+    
+    start_test() {
+        super.start([
+            ['rest', 1],
+			['loot', 5],
+            ['supply', 8],
+            ['escape', 15],
+            ['attack', 20, 'cfg:nowait', false, this.params.param('safe_thr', 120)],
+            ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
+            ['move_back_smart', 40, 'cfg:nowait', [0, 0]],
+		]);
+    }
     
     start_compound() {
         super.start([
@@ -697,10 +709,14 @@ class c_farmer_std extends c_persona {
         }
         this.calmdown = true;
         set_message("escape");
+        safe_log('use_town');
         use_skill('use_town');
+        safe_log('wait 5s');
         task.chk_break(await task.schedule(asleep(5000)));
+        safe_log('wait 5s done');
         if(character.fear/*get_nearest_monster({target: character.name})*/) {
             set_message("escape!!");
+            safe_log('run to town');
             task.chk_break(await task.schedule(this.amoveto('town')));
         }
         this.calmdown = false;
@@ -900,4 +916,5 @@ ch1 = new c_farmer_std();
 //ch1.start_jail();
 //ch1.start_compound();
 //ch1.start_attack();
-ch1.start_snow();
+//ch1.start_snow();
+ch1.start_test();
