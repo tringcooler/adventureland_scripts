@@ -689,23 +689,26 @@ class c_farmer_std extends c_persona {
     }
     
     async taskw_target_monster(task, ctrl, tname) {
+        let target = get_targeted_monster();
+        let dgr_target = get_nearest_monster({target: character.name});
+        //let target_me = (get_target_of(target) === character);
+        if(target && target === dgr_target) {
+            return;
+        } else if(dgr_target) {
+            set_message("Targeted");
+            change_target(dgr_target);
+            return;
+        }
         let tnames = tname;
         if(!(tname instanceof Array)) {
             tnames = [tnames];
         }
-        let target = get_targeted_monster();
         if(tnames.includes(target?.mtype)) {
             return;
         }
         for(let i = tnames.length - 1; i >= 0; i--) {
-            target = get_nearest_monster({type: tnames[i], target: character.name});
+            target = get_nearest_monster({type: tnames[i]});
             if(target) break;
-        }
-        if(!target) {
-            for(let i = tnames.length - 1; i >= 0; i--) {
-                target = get_nearest_monster({type: tnames[i]});
-                if(target) break;
-            }
         }
         if(target) {
             set_message("Targeted");
