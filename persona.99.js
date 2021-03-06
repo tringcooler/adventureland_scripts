@@ -436,7 +436,7 @@ class c_farmer_std extends c_persona {
             ['shopping', 9, 'cfg:nowait'],
 			['target_monster', 10, this.params.param('tar_name', 'boar')],
             ['escape', 15],
-			['attack', 20, 'cfg:nowait'],
+			['attack', 20, 'cfg:nowait', false, this.params.param('safe_thr', 120)],
             ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
 			['move_back_smart', 40, 'cfg:nowait',
                 this.params.param('back_path', [[-160, -1520], [155, -1520], [240, -740], [-225, -755]]),
@@ -857,7 +857,7 @@ class c_farmer_std extends c_persona {
         ));
     }
     
-    async taskw_attack(task, ctrl, careful = false) {
+    async taskw_attack(task, ctrl, careful = false, safethr = null) {
         if(this.calmdown) {
             ctrl.need_wait = true;
             return;
@@ -867,6 +867,13 @@ class c_farmer_std extends c_persona {
             this.battle = false;
             ctrl.need_wait = true;
             return;
+        }
+        if(safethr && get_target_of(target) !== character) {
+            let dist = this.dist_to(target);
+            if(dist < safethr) {
+                ctrl.need_wait = true;
+                return;
+            }
         }
         set_message("Attacking");
         this.battle = true;
