@@ -435,6 +435,7 @@ class c_farmer_std extends c_persona {
             ['supply', 8],
             ['shopping', 9, 'cfg:nowait'],
 			['target_monster', 10, this.params.param('tar_name', 'boar')],
+            ['escape', 15],
 			['attack', 20, 'cfg:nowait'],
             ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
 			['move_back_smart', 40, 'cfg:nowait',
@@ -590,12 +591,14 @@ class c_farmer_std extends c_persona {
     async taskw_supply(task, ctrl) {
         if(is_on_cooldown("use_hp")) return;
         let hpv = character.hp/character.max_hp,
-            mpv = character.mp/character.max_mp;
+            hpd = character.max_hp - character.hp,
+            mpv = character.mp/character.max_mp,
+            mpd = character.max_mp - character.mp;
         if(mpv < 0.2) use_skill('use_mp');
         else if(hpv < 0.8) use_skill('use_hp');
         else if(mpv < 0.5) use_skill('use_mp');
-        else if(hpv < 0.98) use_skill('regen_hp');
-        else if(mpv < 0.9) use_skill('regen_mp');
+        else if(hpd > 50) use_skill('regen_hp');
+        else if(mpd > 100) use_skill('regen_mp');
     }
     
     async taskw_shopping(task, ctrl) {
@@ -686,6 +689,21 @@ class c_farmer_std extends c_persona {
             ctrl.done = true;
         }
         return;
+    }
+    
+    async taskw_escape(task, ctrl) {
+        if(!character.fear) {
+            return;
+        }
+        this.calmdown = true;
+        set_message("escape");
+        use_skill('use_town');
+        task.chk_break(await task.schedule(asleep(5000)));
+        if(character.fear/*get_nearest_monster({target: character.name})*/) {
+            set_message("escape!!");
+            task.chk_break(await task.schedule(this.amoveto('town')));
+        }
+        this.calmdown = false;
     }
     
     async taskw_target_monster(task, ctrl, tname) {
