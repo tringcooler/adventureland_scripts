@@ -256,8 +256,11 @@ class c_persona {
             if(e === ERR_PRSN_BREAK) {
                 safe_log('Break: ' + mtd_name);
                 return;
+            } else if(e.message) {
+                safe_log('Error:' + e.message);
+            } else if('reason' in e) {
+                safe_log('Failed:' + e.reason);
             }
-            safe_log('Error:' + e);
         }
     }
     
@@ -282,7 +285,7 @@ class c_persona {
             }
             try {
                 if(control.need_wait || !cfg.has('nowait')) {
-                    task.chk_break(await task.schedule(this.wait_frame(control.ftime)))
+                    task.chk_break(await task.schedule(this.wait_frame(control.ftime)));
                     control.need_wait = false;
                 }
                 await this[mtd_name](task, control, ...this.get_params(args));
@@ -294,7 +297,12 @@ class c_persona {
 				if(e.message) {
                 	safe_log('Error:' + e.message);
 				}
-                await asleep(0);
+                if('reason' in e) {
+                    safe_log('Failed:' + e.reason);
+                    control.need_wait = true;
+                } else {
+                    task.chk_break(await task.schedule(asleep(0)));
+                }
             }
         }
     }
