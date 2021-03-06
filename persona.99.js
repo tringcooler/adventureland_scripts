@@ -698,8 +698,14 @@ class c_farmer_std extends c_persona {
             return;
         }
         for(let i = tnames.length - 1; i >= 0; i--) {
-            target = get_nearest_monster({type: tnames[i]});
+            target = get_nearest_monster({type: tnames[i], target: character.name});
             if(target) break;
+        }
+        if(!target) {
+            for(let i = tnames.length - 1; i >= 0; i--) {
+                target = get_nearest_monster({type: tnames[i]});
+                if(target) break;
+            }
         }
         if(target) {
             set_message("Targeted");
