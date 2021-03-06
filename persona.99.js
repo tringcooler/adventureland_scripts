@@ -337,7 +337,7 @@ class c_farmer_std extends c_persona {
     start_cave() {
         super.start([
             ['rest', 1],
-            ['ping', 2],
+            //['ping', 2],
             ['minds', 3, ['bat1', 'bat2', 'bat3'], 60],
             ['loot', 5],
             ['supply', 8],
@@ -419,6 +419,15 @@ class c_farmer_std extends c_persona {
                 this.params.param('tar_doors', ['Mainland:halloween'])],
         ]);
     }
+	
+	start_attack() {
+		super.start([
+            ['rest', 1],
+			['loot', 5],
+            ['supply', 8],
+			['attack', 20, 'cfg:nowait'],
+		]);
+	}
     
     start_compound() {
         super.start([
@@ -829,3 +838,4 @@ ch1 = new c_farmer_std();
 ch1.start_forest();
 //ch1.start_jail();
 //ch1.start_compound();
+//ch1.start_attack();
