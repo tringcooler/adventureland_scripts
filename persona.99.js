@@ -617,10 +617,10 @@ class c_farmer_std extends c_persona {
             mpd = character.max_mp - character.mp;
         if(hpv < 0.2) use_skill('use_hp');
         else if(mpv < 0.2) use_skill('use_mp');
-        else if(character.max_mp < 1600 && this.needblink) use_skill('use_mp');
+        else if(character.mp < 1600 && this.needblink) use_skill('use_mp');
         else if(hpv < 0.8) use_skill('use_hp');
         //else if(mpv < 0.5) use_skill('use_mp');
-        else if(character.max_mp < 1800) use_skill('use_mp'); // for blink
+        else if(character.mp < 1800) use_skill('use_mp'); // for blink
         else if(hpd > 50) use_skill('regen_hp');
         else if(mpd > 100) use_skill('regen_mp');
     }
@@ -631,7 +631,7 @@ class c_farmer_std extends c_persona {
             hpd = character.max_hp - character.hp,
             mpv = character.mp/character.max_mp,
             mpd = character.max_mp - character.mp;
-        if(character.max_mp < 1800) use_skill('use_mp'); // for blink
+        if(character.mp < 1800) use_skill('use_mp'); // for blink
         else if(hpd > 50) use_skill('regen_hp');
         else if(mpd > 100) use_skill('regen_mp');
     }
@@ -736,7 +736,7 @@ class c_farmer_std extends c_persona {
             return;
         }
         this.needblink = true;
-        if(character.max_mp < 1600) {
+        if(character.mp < 1600) {
             safe_log('no mana to blink');
         } else {
             safe_log('escape by blink');
