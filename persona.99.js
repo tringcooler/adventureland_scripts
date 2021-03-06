@@ -328,8 +328,6 @@ class c_persona {
 	
 }
 
-const step_val = (ov, nv, dist) => ov + (nv - ov) / dist;
-
 class c_farmer_std extends c_persona {
     
     constructor() {
@@ -501,6 +499,7 @@ class c_farmer_std extends c_persona {
     }
     
     step_to(tar, step = 10) {
+        const step_val = (ov, nv, dist) => ov + (nv - ov) / dist;
         let dist = this.dist_to(tar);
         return [
             step_val(character.x, tar.x, dist / step),
@@ -950,6 +949,82 @@ class c_farmer_std extends c_persona {
     }
     
 }
+
+class c_show_view {
+    
+    constructor(val) {
+        this.val = val;
+        return new Proxy(this, {
+            get(tar, prop, recv) {
+                if(Reflect.has(tar, prop)) {
+                    return Reflect.get(tar, prop, recv);
+                } else if(tar?.val && Reflect.has(tar.val, prop)) {
+                    let val = tar.val[prop];
+                    return new c_show_view(val);
+                } else {
+                    return undefined;
+                }
+            }
+        });
+    }
+    
+    get show() {
+        let val = this.val
+        show_json(val);
+        return val;
+    }
+    
+}
+
+class c_show_util {
+    
+    constructor() {
+        this.colors = {
+            info: 'pink',
+        }
+    }
+    
+    log(s, typ = 'info') {
+        safe_log(s, this.colors[typ]);
+    }
+    
+    view(val) {
+        return new c_show_view(val);
+    }
+    
+    get pos() {
+        let pos = [Math.floor(character.x), Math.floor(character.y)];
+        this.log('pos: ' + pos.join(', '));
+        return this.view(pos);
+    }
+    
+    get map() {
+        let map = get_map();
+        this.log('map: ' + map.name);
+        return this.view(map);
+    }
+    
+    get doors() {
+        let doors = this.map?.doors?.val?.map?.(v => v[4]);
+        this.log('doors: ' + (doors?.length ?? 'none'));
+        return this.view(doors);
+    }
+    
+    cskills(cname = null) {
+        let skeys = Object.keys(G.skills);
+        let title = 'skills';
+        if(cname) {
+            skeys = skeys.filter(k => G.skills?.[k]?.class?.includes?.(cname));
+            title += ' for ' + cname;
+        }
+        let skills = skeys.map(k => [k, G.skills[k].explanation]);
+        this.log(title + ': ' + (skills?.length ?? 'none'));
+        return this.view(skills);
+    }
+    
+}
+
+su = new c_show_util();
 
 ch1 = new c_farmer_std();
 //ch1.start_cave();
