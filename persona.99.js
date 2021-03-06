@@ -435,7 +435,7 @@ class c_farmer_std extends c_persona {
             ['supply', 8],
             ['shopping', 9, 'cfg:nowait'],
 			['target_monster', 10, this.params.param('tar_name', 'boar')],
-            ['escape', 15],
+            ['escape', 15, this.params.param('safe_point', [0, 0])],
 			['attack', 20, 'cfg:nowait', false, this.params.param('safe_thr', 120)],
             ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
 			['move_back_smart', 40, 'cfg:nowait',
@@ -466,6 +466,15 @@ class c_farmer_std extends c_persona {
             ['attack', 20, 'cfg:nowait', false, this.params.param('safe_thr', 120)],
             ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
             ['move_back_smart', 40, 'cfg:nowait', [0, 0]],
+		]);
+    }
+    
+    start_idle() {
+        super.start([
+            ['rest', 1],
+			['loot', 5],
+            ['supply_idle', 8],
+            //['escape', 15],
 		]);
     }
     
@@ -568,7 +577,7 @@ class c_farmer_std extends c_persona {
     }
 	
 	amoveto(tar) {
-		 let brk = false;
+		let brk = false;
 		let wt_thk = async () => {
 			while(!brk && smart.found === false) {
 				await this.wait_frame();
@@ -606,9 +615,23 @@ class c_farmer_std extends c_persona {
             hpd = character.max_hp - character.hp,
             mpv = character.mp/character.max_mp,
             mpd = character.max_mp - character.mp;
-        if(mpv < 0.2) use_skill('use_mp');
+        if(hpv < 0.2) use_skill('use_hp');
+        else if(mpv < 0.2) use_skill('use_mp');
+        else if(character.max_mp < 1600 && this.needblink) use_skill('use_mp');
         else if(hpv < 0.8) use_skill('use_hp');
-        else if(mpv < 0.5) use_skill('use_mp');
+        //else if(mpv < 0.5) use_skill('use_mp');
+        else if(character.max_mp < 1800) use_skill('use_mp'); // for blink
+        else if(hpd > 50) use_skill('regen_hp');
+        else if(mpd > 100) use_skill('regen_mp');
+    }
+    
+    async taskw_supply_idle(task, ctrl) {
+        if(is_on_cooldown("use_hp")) return;
+        let hpv = character.hp/character.max_hp,
+            hpd = character.max_hp - character.hp,
+            mpv = character.mp/character.max_mp,
+            mpd = character.max_mp - character.mp;
+        if(character.max_mp < 1800) use_skill('use_mp'); // for blink
         else if(hpd > 50) use_skill('regen_hp');
         else if(mpd > 100) use_skill('regen_mp');
     }
@@ -703,7 +726,25 @@ class c_farmer_std extends c_persona {
         return;
     }
     
-    async taskw_escape(task, ctrl) {
+    taskw_escape(...args) {
+        return this.taskw_escape_blink(...args);
+    }
+    
+    async taskw_escape_blink(task, ctrl, safe_point = [0, 0]) {
+        if(!character.fear) {
+            this.needblink = false;
+            return;
+        }
+        this.needblink = true;
+        if(character.max_mp < 1600) {
+            safe_log('no mana to blink');
+        } else {
+            safe_log('escape by blink');
+        }
+        use_skill('blink', safe_point);
+    }
+    
+    async taskw_escape_town(task, ctrl) {
         if(!character.fear) {
             return;
         }
@@ -874,7 +915,7 @@ class c_farmer_std extends c_persona {
     }
     
     async taskw_attack(task, ctrl, careful = false, safethr = null) {
-        if(this.calmdown) {
+        if(this.calmdown || this.needblink) {
             ctrl.need_wait = true;
             return;
         }
@@ -916,5 +957,6 @@ ch1 = new c_farmer_std();
 //ch1.start_jail();
 //ch1.start_compound();
 //ch1.start_attack();
-//ch1.start_snow();
-ch1.start_test();
+ch1.start_snow();
+//ch1.start_test();
+//ch1.start_idle();
