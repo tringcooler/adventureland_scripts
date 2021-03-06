@@ -427,6 +427,25 @@ class c_farmer_std extends c_persona {
                 this.params.param('tar_doors', ['Mainland:halloween'])],
         ]);
     }
+    
+    start_snow() {
+		super.start([
+            ['rest', 1],
+			['loot', 5],
+            ['supply', 8],
+            ['shopping', 9, 'cfg:nowait'],
+			['target_monster', 10, this.params.param('tar_name', 'boar')],
+			['attack', 20, 'cfg:nowait'],
+            ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
+			['move_back_smart', 40, 'cfg:nowait',
+                this.params.param('back_path', [[-160, -1520], [155, -1520], [240, -740], [-225, -755]]),
+                this.params.param('back_thr')],
+			['move_to_target', 50, 'cfg:nowait'],
+            ['go_farm', 100, 'cfg:nowait',
+                this.params.param('tar_pos', [-110, -850]),
+                this.params.param('tar_doors', ['Mainland:winterland'])],
+		]);
+	}
 	
 	start_attack() {
 		super.start([
@@ -843,7 +862,8 @@ class c_farmer_std extends c_persona {
 
 ch1 = new c_farmer_std();
 //ch1.start_cave();
-ch1.start_forest();
+//ch1.start_forest();
 //ch1.start_jail();
 //ch1.start_compound();
 //ch1.start_attack();
+ch1.start_snow();
