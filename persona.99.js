@@ -435,7 +435,8 @@ class c_farmer_std extends c_persona {
 			['target_monster', 10, this.params.param('tar_name', 'boar')],
             ['escape', 15, this.params.param('safe_point', [0, 0])],
 			['attack', 20, 'cfg:nowait', false, this.params.param('safe_thr', 120)],
-            ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
+            ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200), 10,
+                (spos, dpos) => !this.cross_range([-300, -1630, 380, -595], spos, dpos)],
 			['move_back_smart', 40, 'cfg:nowait',
                 this.params.param('back_path', [[-160, -1520], [155, -1520], [240, -740], [-225, -755]]),
                 this.params.param('back_thr')],
@@ -504,6 +505,27 @@ class c_farmer_std extends c_persona {
         return [
             step_val(character.x, tar.x, dist / step),
             step_val(character.y, tar.y, dist / step)]
+    }
+    
+    in_range(rng, pos) {
+        return pos[0] >= rng[0]
+            && pos[0] < rng[2]
+            && pos[1] >= rng[1]
+            && pos[1] < rng[3];
+    }
+    
+    cross_range(rng, spos, dpos, chkin = false, chkout = true) {
+        let s_in = this.in_range(rng, spos);
+        let d_in = this.in_range(rng, dpos);
+        if(s_in === d_in) {
+            return false;
+        } else if(s_in && chkout) {
+            return true;
+        } else if(d_in && chkin) {
+            return true;
+        } else {
+            return false;
+        }
     }
     
     choose_back_pos(tar, poslist) {
@@ -590,6 +612,7 @@ class c_farmer_std extends c_persona {
     
     async taskw_rest(task, ctrl) {
         if(character.rip) {
+            safe_log('Down at ' + new Date().toLocaleString());
             this.break();
         }
     }
@@ -844,7 +867,7 @@ class c_farmer_std extends c_persona {
         task.chk_break(await task.schedule(move(nx, ny)));
     }
     
-    async taskw_move_back(task, ctrl, thr = 120, step = 10) {
+    async taskw_move_back(task, ctrl, thr = 120, step = 10, cb_validmove = null) {
         let target = get_targeted_monster();
         if(!target) {
             if(this.runaway) {
@@ -869,7 +892,11 @@ class c_farmer_std extends c_persona {
             return;
         }
         let [nx, ny] = this.step_to(target, -step);
-        if(!can_move_to(nx, ny)) {
+        let vmv = true;
+        if(cb_validmove instanceof Function) {
+            vmv = cb_validmove([character.x, character.y], [nx, ny]);
+        }
+        if(!vmv || !can_move_to(nx, ny)) {
             this.stucked = true;
             ctrl.need_wait = true;
             return;
