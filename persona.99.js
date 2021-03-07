@@ -170,9 +170,7 @@ class c_persona {
             this.tasks[tname] = task;
             task.chk_break = ret => {
                 if(task.force_break || task.is_break(ret)) {
-                    if(this.tasks[tname] === task) {
-                        delete this.tasks[tname];
-                    }
+                    task.remove();
                     throw ERR_PRSN_BREAK;
                 }
                 return ret;
@@ -180,6 +178,9 @@ class c_persona {
             task.remove = () => {
                 if(this.tasks[tname] === task) {
                     delete this.tasks[tname];
+                    if(Object.keys(this.tasks).length === 0) {
+                        this.emit_idle?.();
+                    }
                 }
             };
             task.force_break = false;
@@ -190,6 +191,25 @@ class c_persona {
             }
         }
         this.minds = minds;
+    }
+    
+    emit_idle() {
+        let hndl;
+        while(hndl = this.idle_hndls?.shift?.()) {
+            if(hndl instanceof Function) {
+                hndl();
+            }
+        }
+    }
+    
+    on_idle(hndl) {
+        if(!(hndl instanceof Function)) {
+            return;
+        }
+        if(!this.idle_hndls) {
+            this.idle_hndls = [];
+        }
+        this.idle_hndls.push(hndl);
     }
     
     setup_sense() {
@@ -612,8 +632,12 @@ class c_farmer_std extends c_persona {
     
     async taskw_rest(task, ctrl) {
         if(character.rip) {
+        //if(this.tflg1) {
             safe_log('Down at ' + new Date().toLocaleString());
             this.break();
+            this.on_idle(() => {
+                this.start_revive?.();
+            });
         }
     }
     
@@ -653,8 +677,7 @@ class c_farmer_std extends c_persona {
             hpd = character.max_hp - character.hp,
             mpv = character.mp/character.max_mp,
             mpd = character.max_mp - character.mp;
-        if(character.mp < 1800) use_skill('use_mp'); // for blink
-        else if(hpd > 50) use_skill('regen_hp');
+        if(hpd > 50) use_skill('regen_hp');
         else if(mpd > 100) use_skill('regen_mp');
     }
     
