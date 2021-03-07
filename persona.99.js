@@ -666,14 +666,15 @@ class c_farmer_std extends c_persona {
             return;
         }
         set_message("Go shopping");
+        stop();
         task.hold();
         task.chk_break(await task.schedule(this.amoveto('town')));
         set_message("shopping");
         if(quantity(hpname) < 100) {
-            buy(hpname, 200);
+            buy(hpname, 500);
         }
         if(quantity(mpname) < 100) {
-            buy(mpname, 200);
+            buy(mpname, 500);
         }
 		task.chk_break(await task.schedule(asleep(1000)));
     }
