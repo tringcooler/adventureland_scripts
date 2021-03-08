@@ -1117,6 +1117,10 @@ class c_show_util {
         return new c_show_view(val);
     }
     
+    v(...args) {
+        return this.view(...args);
+    }
+    
     get pos() {
         let pos = [Math.floor(character.x), Math.floor(character.y)];
         this.log('pos: ' + pos.join(', '));
