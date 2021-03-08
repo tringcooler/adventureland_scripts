@@ -352,13 +352,17 @@ class c_farmer_std extends c_persona {
     
     constructor() {
         super();
+        this.tick = 0;
+        this.reset_status();
+        this.setup_consts();
+        this.setup_sense();
+    }
+    
+    reset_status() {
         this.stucked = false;
         this.battle = false;
         this.travel = false;
         this.runaway = false;
-        this.tick = 0;
-        this.setup_consts();
-        this.setup_sense();
     }
     
     setup_consts() {
@@ -680,6 +684,7 @@ class c_farmer_std extends c_persona {
             safe_log('Down at ' + new Date().toLocaleString());
             this.break();
             this.on_idle(() => {
+                this.reset_status();
                 this.start_revive?.(will);
             });
         }
