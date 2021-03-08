@@ -357,7 +357,13 @@ class c_farmer_std extends c_persona {
         this.travel = false;
         this.runaway = false;
         this.tick = 0;
+        this.setup_consts();
         this.setup_sense();
+    }
+    
+    setup_consts() {
+        this.C = {};
+        this.C.MP_BLINK = 1600;
     }
     
     start_cave() {
@@ -448,7 +454,7 @@ class c_farmer_std extends c_persona {
     
     start_snow() {
 		super.start([
-            ['rest', 1],
+            ['rest', 1, 'snow'],
 			['loot', 5],
             ['supply', 8],
             ['shopping', 9, 'cfg:nowait'],
@@ -478,13 +484,14 @@ class c_farmer_std extends c_persona {
     
     start_test() {
         super.start([
-            ['rest', 1],
+            ['rest', 1, 'test'],
 			['loot', 5],
-            ['supply', 8],
+            ['supply', 8, 'idle'],
+            ['shopping', 9, 'cfg:nowait'],
             ['escape', 15],
-            ['attack', 20, 'cfg:nowait', false, this.params.param('safe_thr', 120)],
-            ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
-            ['move_back_smart', 40, 'cfg:nowait', [0, 0]],
+            //['attack', 20, 'cfg:nowait', false, this.params.param('safe_thr', 120)],
+            //['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
+            //['move_back_smart', 40, 'cfg:nowait', [0, 0]],
 		]);
     }
     
@@ -492,9 +499,15 @@ class c_farmer_std extends c_persona {
         super.start([
             ['rest', 1],
 			['loot', 5],
-            ['supply_idle', 8],
+            ['supply', 8, 'idle'],
             //['escape', 15],
 		]);
+    }
+    
+    start_revive(will = null) {
+        super.start([
+            ['revive', 10, will],
+        ]);
     }
     
     start_compound() {
@@ -576,6 +589,17 @@ class c_farmer_std extends c_persona {
         return dpos;
     }
     
+    get tflg() {
+        let flg = (this._tflg ?? null);
+        this._tflg = null;
+        return flg;
+    }
+    
+    set tflg(v) {
+        this._tflg = v;
+        return true;
+    }
+    
     async wait_for_searching() {
         while(smart.searching === false) {
             await this.wait_frame();
@@ -630,14 +654,50 @@ class c_farmer_std extends c_persona {
         return prm;
 	}
     
-    async taskw_rest(task, ctrl) {
+    async ablink(pos) {
+        let omp = character.mp;
+        if(omp < this.C.MP_BLINK) {
+            return false;
+        }
+        use_skill('blink', pos);
+        while(omp - character.mp < this.C.MP_BLINK * 0.6 /* thr for mp pot or other skill */) {
+            if(character.mp < this.C.MP_BLINK) {
+                return false;
+            }
+            await this.wait_frame();
+        };
+        for(let i = 0; i < 5 /* wait frames for check pos */; i++) {
+            if(this.dist_to(pos) < 50) {
+                return true;
+            }
+            await this.wait_frame();
+        }
+        return false;
+    }
+    
+    async taskw_rest(task, ctrl, will = null) {
         if(character.rip) {
-        //if(this.tflg1) {
             safe_log('Down at ' + new Date().toLocaleString());
             this.break();
             this.on_idle(() => {
-                this.start_revive?.();
+                this.start_revive?.(will);
             });
+        }
+    }
+    
+    async taskw_revive(task, ctrl, will = null) {
+        if(character.rip) {
+            respawn();
+        } else {
+            safe_log('Revive at ' + new Date().toLocaleString());
+            this.break();
+            if(will) {
+                this.on_idle(() => {
+                    let sname = 'start_' + will;
+                    safe_log('Start ' + will);
+                    this[sname]?.();
+                });
+            }
         }
     }
     
@@ -655,7 +715,12 @@ class c_farmer_std extends c_persona {
         loot();
     }
     
-    async taskw_supply(task, ctrl) {
+    async taskw_supply(task, ctrl, typ = 'std') {
+        let tname = 'taskw_supply_' + typ;
+        return this[tname]?.(task, ctrl);
+    }
+    
+    async taskw_supply_std(task, ctrl) {
         if(is_on_cooldown("use_hp")) return;
         let hpv = character.hp/character.max_hp,
             hpd = character.max_hp - character.hp,
@@ -663,12 +728,14 @@ class c_farmer_std extends c_persona {
             mpd = character.max_mp - character.mp;
         if(hpv < 0.2) use_skill('use_hp');
         else if(mpv < 0.2) use_skill('use_mp');
-        else if(character.mp < 1600 && this.needblink) use_skill('use_mp');
+        else if(character.mp < this.C.MP_BLINK && this.needblink) use_skill('use_mp');
         else if(hpv < 0.8) use_skill('use_hp');
         //else if(mpv < 0.5) use_skill('use_mp');
-        else if(character.mp < 1800) use_skill('use_mp'); // for blink
+        else if(character.mp < this.C.MP_BLINK + 200) use_skill('use_mp'); // for blink
         else if(hpd > 50) use_skill('regen_hp');
         else if(mpd > 100) use_skill('regen_mp');
+        else return;
+        task.chk_break(await task.schedule(asleep(500)));
     }
     
     async taskw_supply_idle(task, ctrl) {
@@ -677,11 +744,14 @@ class c_farmer_std extends c_persona {
             hpd = character.max_hp - character.hp,
             mpv = character.mp/character.max_mp,
             mpd = character.max_mp - character.mp;
-        if(hpd > 50) use_skill('regen_hp');
+        if(character.mp < this.C.MP_BLINK + 200) use_skill('regen_mp'); // for blink
+        else if(hpd > 50) use_skill('regen_hp');
         else if(mpd > 100) use_skill('regen_mp');
+        else return;
+        task.chk_break(await task.schedule(asleep(500)));
     }
     
-    async taskw_shopping(task, ctrl) {
+    async taskw_shopping(task, ctrl, safe_point = [0, 0]) {
         let hpname = 'hpot1';
         let mpname = 'mpot0';
         if(quantity(hpname) > 50 && quantity(mpname) > 50) {
@@ -691,13 +761,18 @@ class c_farmer_std extends c_persona {
         set_message("Go shopping");
         stop();
         task.hold();
+        task.chk_break(await task.schedule(this.ablink(safe_point)));
+        task.hold();
         task.chk_break(await task.schedule(this.amoveto('town')));
         set_message("shopping");
-        if(quantity(hpname) < 100) {
-            buy(hpname, 500);
+        let v_nd = 500;
+        let hp_nd = v_nd - quantity(hpname);
+        let mp_nd = v_nd - quantity(mpname);
+        if(hp_nd > 0) {
+            buy(hpname, hp_nd);
         }
-        if(quantity(mpname) < 100) {
-            buy(mpname, 500);
+        if(mp_nd > 0) {
+            buy(mpname, mp_nd);
         }
 		task.chk_break(await task.schedule(asleep(1000)));
     }
@@ -782,12 +857,11 @@ class c_farmer_std extends c_persona {
             return;
         }
         this.needblink = true;
-        if(character.mp < 1600) {
-            safe_log('no mana to blink');
-        } else {
+        if(task.chk_break(await task.schedule(this.ablink(safe_point)))) {
             safe_log('escape by blink');
+        } else {
+            safe_log('blink failed');
         }
-        use_skill('blink', safe_point);
     }
     
     async taskw_escape_town(task, ctrl) {
