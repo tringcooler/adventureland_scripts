@@ -448,7 +448,9 @@ class c_farmer_std extends c_persona {
             //    this.params.param('back_path', [[530, -620], [430, -760], [160, -770], [290, -550]]),
             //    this.params.param('back_thr')],
             ['move_back_smart', 40, 'cfg:nowait',
-                this.params.param('back_path', [[-410, 840], [-675, 830], [-670, 510], [-410, 530]]),
+                this.params.param('back_path', [
+                    [-410, 840], [-675, 830], /*[-750, 630],*/ [-670, 510], [-410, 530], /*[-290, 730],*/
+                ]),
                 this.params.param('back_thr')],
             ['move_to_target', 50, 'cfg:nowait'],
 			//['go_farm', 100, 'cfg:nowait',
