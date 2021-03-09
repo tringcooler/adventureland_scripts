@@ -374,7 +374,7 @@ class c_farmer_std extends c_persona {
         super.start([
             ['rest', 1],
             //['ping', 2],
-            ['minds', 3, ['bat1', 'bat2', 'bat3'], 60],
+            ['minds', 3, ['bat1', 'bat2', 'bat3'], 20],
             ['loot', 5],
             ['supply', 8],
             ['shopping', 9, 'cfg:nowait'],
@@ -1181,10 +1181,10 @@ su = new c_show_util();
 
 ch1 = new c_farmer_std();
 //ch1.start_cave();
-ch1.start_forest();
+//ch1.start_forest();
 //ch1.start_jail();
 //ch1.start_compound();
 //ch1.start_attack();
-//ch1.start_snow();
+ch1.start_snow();
 //ch1.start_test();
 //ch1.start_idle();
