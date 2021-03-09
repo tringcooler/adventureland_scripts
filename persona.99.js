@@ -429,17 +429,21 @@ class c_farmer_std extends c_persona {
     
     start_forest() {
         super.start([
-            ['rest', 1],
-            ['ping', 2],
+            ['rest', 1, 'forest'],
+            //['ping', 2],
             //['minds', 3, ['bat1', 'bat2', 'bat3'], 60],
             ['loot', 5],
             ['supply', 8],
             ['shopping', 9, 'cfg:nowait'],
 			//['target_monster', 10, this.params.param('tar_name', ['snake', 'osnake'])],
 			['target_monster', 10, this.params.param('tar_name', [/*'scorpion',*/ 'xscorpion'])],
+            ['calmdown', 12, pos => this.in_range([-900, 400, -260, 900], pos)],
+            ['escape', 15, this.params.param('safe_point', [0, 0])],
             //['attack', 20, 'cfg:nowait'],
-            ['attack', 20, 'cfg:nowait', this.calmdown = true],
-            ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200)],
+            //['attack', 20, 'cfg:nowait', this.calmdown = true],
+            ['attack', 20, 'cfg:nowait', false, this.params.param('safe_thr', 150)],
+            ['move_back', 30, 'cfg:nowait', this.params.param('back_thr', 200), 10,
+                (spos, dpos) => !this.cross_range([-900, 400, -260, 900], spos, dpos)],
 			//['move_back_smart', 40, 'cfg:nowait',
             //    this.params.param('back_path', [[530, -620], [430, -760], [160, -770], [290, -550]]),
             //    this.params.param('back_thr')],
@@ -888,6 +892,19 @@ class c_farmer_std extends c_persona {
         this.calmdown = false;
     }
     
+    async taskw_calmdown(task, ctrl, cb_battlerange = null) {
+        if(cb_battlerange instanceof Function) {
+            if(cb_battlerange([character.x, character.y])) {
+               return; 
+            }
+        }
+        if(character.targets === 0) {
+            this.calmdown = true;
+        } else {
+            this.calmdown = false;
+        }
+    }
+    
     async taskw_target_monster(task, ctrl, tname) {
         let target = get_targeted_monster();
         let dgr_target = get_nearest_monster({target: character.name});
@@ -1162,10 +1179,10 @@ su = new c_show_util();
 
 ch1 = new c_farmer_std();
 //ch1.start_cave();
-//ch1.start_forest();
+ch1.start_forest();
 //ch1.start_jail();
 //ch1.start_compound();
 //ch1.start_attack();
-ch1.start_snow();
+//ch1.start_snow();
 //ch1.start_test();
 //ch1.start_idle();
