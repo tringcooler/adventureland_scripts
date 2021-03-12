@@ -599,6 +599,10 @@ class c_farmer_std extends c_persona {
         return dpos;
     }
     
+    calc_mp(omp) {
+        return omp * (100 - character.mp_reduction) / 100
+    }
+    
     get tflg() {
         let flg = (this._tflg ?? null);
         this._tflg = null;
@@ -666,12 +670,14 @@ class c_farmer_std extends c_persona {
     
     async ablink(pos) {
         let omp = character.mp;
-        if(omp < this.C.MP_BLINK) {
+        let blink_mp = this.calc_mp(this.C.MP_BLINK);
+        if(omp < blink_mp) {
             return false;
         }
         use_skill('blink', pos);
-        while(omp - character.mp < this.C.MP_BLINK * 0.6 /* thr for mp pot or other skill */) {
-            if(character.mp < this.C.MP_BLINK) {
+        //while(omp - character.mp < blink_mp * 0.6 /* thr for mp pot or other skill */) {
+        while(Math.abs/* orb skill may restore mp */(omp - character.mp) < blink_mp * 0.6 /* thr for mp pot or other skill */) {
+            if(character.mp < blink_mp) {
                 return false;
             }
             await this.wait_frame();
@@ -739,7 +745,7 @@ class c_farmer_std extends c_persona {
             mpd = character.max_mp - character.mp;
         if(hpv < 0.2) use_skill('use_hp');
         else if(mpv < 0.2) use_skill('use_mp');
-        else if(character.mp < this.C.MP_BLINK && this.needblink) use_skill('use_mp');
+        else if(character.mp < this.calc_mp(this.C.MP_BLINK) && this.needblink) use_skill('use_mp');
         else if(hpv < 0.8) use_skill('use_hp');
         //else if(mpv < 0.5) use_skill('use_mp');
         else if(character.mp < this.C.MP_BLINK + 200) use_skill('use_mp'); // for blink
