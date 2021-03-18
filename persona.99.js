@@ -520,9 +520,9 @@ class c_farmer_std extends c_persona {
         ]);
     }
     
-    start_compound() {
+    start_compound(thrlvl = 1) {
         super.start([
-            ['compound_all', 100],
+            ['compound_all', 100, thrlvl],
         ]);
     }
     
@@ -795,7 +795,7 @@ class c_farmer_std extends c_persona {
     }
     
     async taskw_compound_all(task, ctrl, thrlvl = 1) {
-        let scname = 'cscroll0';
+        let scname = thrlvl > 1 ? 'cscroll1' : 'cscroll0';
         if(character.q.compound) {
             return;
         }
