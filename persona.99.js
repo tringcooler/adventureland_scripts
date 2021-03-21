@@ -289,6 +289,7 @@ class c_persona {
             'need_wait': false,
             'done': false,
             'ftime': null,
+            'context': {},
         };
         let cfg = new Set();;
         if(args[0]?.slice?.(0, 4) === 'cfg:') {
@@ -517,6 +518,12 @@ class c_farmer_std extends c_persona {
     start_revive(will = null) {
         super.start([
             ['revive', 10, will],
+        ]);
+    }
+    
+    start_upgrade(thrlvl = 5) {
+        super.start([
+            ['upgrade_all', 100, thrlvl],
         ]);
     }
     
@@ -792,6 +799,50 @@ class c_farmer_std extends c_persona {
             buy(mpname, mp_nd);
         }
 		task.chk_break(await task.schedule(asleep(1000)));
+    }
+    
+    async taskw_upgrade_all(task, ctrl, max_lvl = 5) {
+        let thrlvl = ctrl.context.thrlvl;
+        if(!(thrlvl >= 0)) {
+            thrlvl = 0;
+            ctrl.context.thrlvl = thrlvl;
+        }
+        if(ctrl.context.thrlvl ++ > max_lvl) {
+            ctrl.done = true;
+            return;
+        }
+        let scname = thrlvl > 4 ? 'scroll1' : 'scroll0';
+        for(let i = 0; i < character.items.length; i++) {
+            let item = character.items[i];
+            if(!item) {
+                continue;
+            }
+            let item_def = G.items[item.name];
+            if(!item_def.upgrade || !('level' in item) || item.level > thrlvl) continue;
+            
+            let sc_slot = locate_item(scname);
+            if(sc_slot < 0) {
+                try {
+                    let data = task.chk_break(await task.schedule(buy(scname, 1)));
+                    sc_slot = data.num;
+                } catch(e) {
+                    safe_log('buy failed: ' + e.reason);
+                    ctrl.done = true;
+                    return;
+                }
+            }
+            try {
+                let data = task.chk_break(await task.schedule(upgrade(i, sc_slot)));
+                if(!data.success) {
+                    safe_log('upgrade broken: ' + item.name + ':' + item.level);
+                }
+            } catch(e) {
+                safe_log('upgrade failed: ' + e.reason);
+                ctrl.done = true;
+                return;
+            }
+        }
+        return;
     }
     
     async taskw_compound_all(task, ctrl, thrlvl = 1) {
@@ -1194,3 +1245,4 @@ ch1 = new c_farmer_std();
 ch1.start_snow();
 //ch1.start_test();
 //ch1.start_idle();
+//ch1.start_upgrade();
