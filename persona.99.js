@@ -754,7 +754,7 @@ class c_farmer_std extends c_persona {
         else if(mpv < 0.2) use_skill('use_mp');
         else if(character.mp < this.calc_mp(this.C.MP_BLINK) && this.needblink) use_skill('use_mp');
         else if(hpv < 0.8) use_skill('use_hp');
-        //else if(mpv < 0.5) use_skill('use_mp');
+        else if(mpv < 0.7) use_skill('use_mp');
         else if(character.mp < this.C.MP_BLINK + 200) use_skill('use_mp'); // for blink
         else if(hpd > 50) use_skill('regen_hp');
         else if(mpd > 100) use_skill('regen_mp');
