@@ -811,7 +811,7 @@ class c_farmer_std extends c_persona {
             ctrl.done = true;
             return;
         }
-        let scname = thrlvl > 4 ? 'scroll1' : 'scroll0';
+        
         for(let i = 0; i < character.items.length; i++) {
             let item = character.items[i];
             if(!item) {
@@ -819,6 +819,16 @@ class c_farmer_std extends c_persona {
             }
             let item_def = G.items[item.name];
             if(!item_def.upgrade || !('level' in item) || item.level > thrlvl) continue;
+            if(quantity(item.name) < 2) continue;
+            
+            let scname;
+            if(item_grade(item) === 0) {
+                scname = thrlvl > 4 ? 'scroll1' : 'scroll0';
+            } else if(item_grade(item) === 1) {
+                scname = 'scroll1';
+            } else {
+                continue;
+            }
             
             let sc_slot = locate_item(scname);
             if(sc_slot < 0) {
