@@ -439,7 +439,7 @@ class c_farmer_std extends c_persona {
 			//['target_monster', 10, this.params.param('tar_name', ['snake', 'osnake'])],
 			['target_monster', 10, this.params.param('tar_name', [/*'scorpion',*/ 'xscorpion'])],
             ['calmdown', 12, pos => this.in_range([-900, 400, -260, 900], pos)],
-            ['escape', 15, this.params.param('safe_point', [0, 0])],
+            ['escape_blink_careful', 15, this.params.param('safe_point', [0, 0]), 2000],
             //['attack', 20, 'cfg:nowait'],
             //['attack', 20, 'cfg:nowait', this.calmdown = true],
             ['attack', 20, 'cfg:nowait', false, this.params.param('safe_thr', 150)],
@@ -933,6 +933,19 @@ class c_farmer_std extends c_persona {
     
     async taskw_escape_blink(task, ctrl, safe_point = [0, 0]) {
         if(!character.fear) {
+            this.needblink = false;
+            return;
+        }
+        this.needblink = true;
+        if(task.chk_break(await task.schedule(this.ablink(safe_point)))) {
+            safe_log('escape by blink');
+        } else {
+            safe_log('blink failed');
+        }
+    }
+    
+    async taskw_escape_blink_careful(task, ctrl, safe_point = [0, 0], thr_hp = 2000) {
+        if(!character.fear && character.hp > thr_hp) {
             this.needblink = false;
             return;
         }
