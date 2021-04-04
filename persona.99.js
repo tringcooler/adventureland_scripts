@@ -685,7 +685,7 @@ class c_farmer_std extends c_persona {
         //while(omp - character.mp < blink_mp * 0.6 /* thr for mp pot or other skill */) {
         while(
             Math.abs/* orb skill may restore mp */(omp - character.mp) < blink_mp * 0.6 /* thr for mp pot or other skill */
-            || (character.mp > omp && character.max_mp - omp <= blink_mp * 0.6) /* omp almost full and orb restored mp */) {
+            && !(character.mp > omp && character.max_mp - omp <= blink_mp * 0.6) /* omp almost full and orb restored mp */) {
             if(character.mp < blink_mp) {
                 return false;
             }
